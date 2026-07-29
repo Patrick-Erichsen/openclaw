@@ -6,6 +6,7 @@ import { loadNodeHostConfig } from "../../node-host/config.js";
 import { runNodeHost } from "../../node-host/runner.js";
 import { runNodeHostWorker } from "../../node-host/worker.js";
 import { defaultRuntime } from "../../runtime.js";
+import { resolveUserPath } from "../../utils.js";
 import { formatInvalidPortOption } from "../error-format.js";
 import { formatHelpExamples } from "../help-format.js";
 import {
@@ -18,6 +19,15 @@ import {
 } from "./daemon.js";
 import { resolveNodeGatewayOptions } from "./gateway-options.js";
 import { runNodeIdentityShow } from "./identity.js";
+
+function applyNodeRuntimeStateDir(raw?: string): void {
+  if (!raw?.trim()) {
+    return;
+  }
+  // CLI bootstrap has already loaded the operator's global config and dotenv.
+  // Switch only the node-owned identity/auth/approval state from this point on.
+  process.env.OPENCLAW_STATE_DIR = resolveUserPath(raw.trim());
+}
 
 export function registerNodeCli(program: Command) {
   const node = program
@@ -56,9 +66,11 @@ export function registerNodeCli(program: Command) {
     .option("--tls-fingerprint <sha256>", "Expected TLS certificate fingerprint (sha256)")
     .option("--node-id <id>", "Override the generated node instance id")
     .option("--display-name <name>", "Override node display name")
+    .option("--state-dir <dir>", "Use a separate node identity/auth/approval state directory")
     .option("--share-installed-apps", "Share installed macOS applications with the Gateway")
     .option("--no-share-installed-apps", "Disable installed application sharing")
     .action(async (opts) => {
+      applyNodeRuntimeStateDir(opts.stateDir);
       const existing = await loadNodeHostConfig();
       const { host, port, contextPath, tls, tlsFingerprint } = resolveNodeGatewayOptions(
         opts,
@@ -98,7 +110,9 @@ export function registerNodeCli(program: Command) {
     .command("identity")
     .description("Print the node host device identity (device id + public key)")
     .option("--json", "Output JSON", false)
+    .option("--state-dir <dir>", "Read identity from a separate node state directory")
     .action((opts) => {
+      applyNodeRuntimeStateDir(opts.stateDir);
       runNodeIdentityShow(opts);
     });
 

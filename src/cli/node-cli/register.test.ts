@@ -1,6 +1,6 @@
 // Node CLI register tests cover node command registration and option wiring.
 import { Command } from "commander";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { registerNodeCli } from "./register.js";
 
 type LoadNodeHostConfig = typeof import("../../node-host/config.js").loadNodeHostConfig;
@@ -12,6 +12,7 @@ const daemonMocks = vi.hoisted(() => ({
     exit: vi.fn(),
   },
   loadNodeHostConfig: vi.fn<LoadNodeHostConfig>(async () => null),
+  runNodeIdentityShow: vi.fn(),
   runNodeHost: vi.fn(),
   runNodeDaemonInstall: vi.fn(),
   runNodeDaemonRestart: vi.fn(),
@@ -31,6 +32,10 @@ vi.mock("../../node-host/runner.js", () => ({
   runNodeHost: daemonMocks.runNodeHost,
 }));
 
+vi.mock("./identity.js", () => ({
+  runNodeIdentityShow: daemonMocks.runNodeIdentityShow,
+}));
+
 vi.mock("../../runtime.js", () => ({
   defaultRuntime: daemonMocks.defaultRuntime,
 }));
@@ -47,11 +52,14 @@ function createProgram(): Command {
 }
 
 describe("registerNodeCli", () => {
+  const originalStateDir = process.env.OPENCLAW_STATE_DIR;
+
   beforeEach(() => {
     daemonMocks.defaultRuntime.error.mockClear();
     daemonMocks.defaultRuntime.exit.mockClear();
     daemonMocks.loadNodeHostConfig.mockClear();
     daemonMocks.loadNodeHostConfig.mockResolvedValue(null);
+    daemonMocks.runNodeIdentityShow.mockClear();
     daemonMocks.runNodeHost.mockClear();
     daemonMocks.runNodeDaemonInstall.mockClear();
     daemonMocks.runNodeDaemonRestart.mockClear();
@@ -59,6 +67,14 @@ describe("registerNodeCli", () => {
     daemonMocks.runNodeDaemonStatus.mockClear();
     daemonMocks.runNodeDaemonStop.mockClear();
     daemonMocks.runNodeDaemonUninstall.mockClear();
+  });
+
+  afterEach(() => {
+    if (originalStateDir === undefined) {
+      delete process.env.OPENCLAW_STATE_DIR;
+    } else {
+      process.env.OPENCLAW_STATE_DIR = originalStateDir;
+    }
   });
 
   it("registers node start for the macOS app node service manager", async () => {
@@ -89,6 +105,36 @@ describe("registerNodeCli", () => {
     expect(daemonMocks.runNodeHost).toHaveBeenCalledWith(
       expect.objectContaining({ gatewayPort: 19000 }),
     );
+  });
+
+  it("selects isolated node state before loading node-owned config", async () => {
+    const stateDir = "/tmp/openclaw-buzz-node";
+    daemonMocks.loadNodeHostConfig.mockImplementationOnce(async () => {
+      expect(process.env.OPENCLAW_STATE_DIR).toBe(stateDir);
+      return null;
+    });
+
+    await createProgram().parseAsync(["node", "run", "--state-dir", stateDir], {
+      from: "user",
+    });
+
+    expect(daemonMocks.runNodeHost).toHaveBeenCalledOnce();
+  });
+
+  it("selects isolated node state before reading its identity", async () => {
+    const stateDir = "/tmp/openclaw-buzz-node";
+    daemonMocks.runNodeIdentityShow.mockImplementationOnce(() => {
+      expect(process.env.OPENCLAW_STATE_DIR).toBe(stateDir);
+    });
+
+    await createProgram().parseAsync(["node", "identity", "--json", "--state-dir", stateDir], {
+      from: "user",
+    });
+
+    expect(daemonMocks.runNodeIdentityShow).toHaveBeenCalledWith({
+      json: true,
+      stateDir,
+    });
   });
 
   it("falls back to configured node run port when --port is omitted", async () => {

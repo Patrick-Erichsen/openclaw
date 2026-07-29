@@ -84,6 +84,7 @@ Options:
 - `--tls-fingerprint <sha256>`: Expected TLS certificate fingerprint (sha256)
 - `--node-id <id>`: Override the client instance ID stored in shared SQLite state (does not reset pairing)
 - `--display-name <name>`: Override the node display name
+- `--state-dir <dir>`: Keep node identity, issued device auth, and exec approvals in a separate state directory. Global config and dotenv are loaded before this switch.
 
 ## Gateway auth for node host
 
@@ -143,8 +144,9 @@ Service commands accept `--json` for machine-readable output.
 The node host retries Gateway restart and network closes in-process. If the
 Gateway reports a terminal token/password/bootstrap auth pause, the node host
 logs the close detail and exits non-zero so launchd/systemd/Task Scheduler can
-restart it with fresh config and credentials. Pairing-required pauses stay in
-the foreground flow so the pending request can be approved.
+restart it with fresh config and credentials. A foreground node host retries
+first-time pairing in-process so it picks up operator approval without a manual
+restart.
 
 ## Pairing
 
@@ -172,6 +174,7 @@ openclaw node identity --json
 
 It prints the device ID and public key from the `primary` row in
 `state/openclaw.sqlite` and never creates the database or a new identity.
+Pass `--state-dir <dir>` to inspect an isolated foreground node state.
 
 On tightly controlled node networks, the Gateway operator can explicitly opt in
 to auto-approving first-time node pairing from trusted CIDRs:
@@ -224,9 +227,8 @@ revoke and re-pair a node:
    attempt can request pairing.
 3. On the Gateway, run `openclaw devices list`, then
    `openclaw devices approve <deviceRequestId>`.
-4. Restart or rerun the node again. A client paused for pairing does not resume
-   automatically after approval; this reconnect creates the separate
-   command-surface request.
+4. Leave the node running. It reconnects automatically after device approval
+   and creates the separate command-surface request.
 5. On the Gateway, run `openclaw nodes pending`, then
    `openclaw nodes approve <nodeRequestId>`.
 
