@@ -27,7 +27,10 @@ import {
   resolveBootstrapProfileScopesForRoles,
 } from "../../../shared/device-bootstrap-profile.js";
 import { roleScopesAllow } from "../../../shared/operator-scope-compat.js";
-import { isBrowserCopilotClient } from "../../../utils/message-channel.js";
+import {
+  GATEWAY_CLIENT_NAMES,
+  isBrowserCopilotClient,
+} from "../../../utils/message-channel.js";
 import { pruneSupersededSilentPairingsAfterApproval } from "../../device-pairing-prune.js";
 import { shouldAutoApproveNodePairingFromTrustedCidrs } from "../../node-pairing-auto-approve.js";
 import { normalizeChromeExtensionOrigin } from "../../origin-check.js";
@@ -558,17 +561,18 @@ export async function authorizeGatewayConnectDevice(
         const approvedScopes = exposeApprovedAccess
           ? resolvePairedAccessScopes(existingPairedDevice)
           : [];
-        const retryAfterBootstrapPairingApproval =
-          authMethod === "bootstrap-token" &&
+        const retryAfterForegroundNodePairingApproval =
           reason === "not-paired" &&
           role === "node" &&
           scopes.length === 0 &&
-          !existingPairedDevice;
-        // Keep the node retrying while a detached approval can still land
-        // (bootstrap redemption or a running ssh-verify probe); default
-        // pairing-required behavior pauses the client reconnect loop.
+          !existingPairedDevice &&
+          (authMethod === "bootstrap-token" ||
+            connectParams.client.id === GATEWAY_CLIENT_NAMES.NODE_HOST);
+        // Keep the foreground node host retrying while operator approval can
+        // land. Bootstrap redemption and SSH verification also complete out of
+        // band; default pairing-required behavior pauses other client loops.
         const retryWhileDetachedApprovalPending =
-          retryAfterBootstrapPairingApproval || sshVerifyStarted;
+          retryAfterForegroundNodePairingApproval || sshVerifyStarted;
         const pairingErrorDetails = buildPairingConnectErrorDetails({
           reason,
           requestId: recoveryRequestId,

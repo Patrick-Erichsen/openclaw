@@ -166,7 +166,7 @@ describe("gateway ssh-verified node pairing auto-approve", () => {
     });
   });
 
-  test("sshVerify: false disables the probe and keeps default reconnect pause behavior", async () => {
+  test("sshVerify: false disables the probe while node-host awaits manual approval", async () => {
     await withLanNodePairingAttempt({
       identityName: "ssh-verify-disabled",
       beforeStart: async () => {
@@ -178,8 +178,10 @@ describe("gateway ssh-verified node pairing auto-approve", () => {
         const res = await connectNode();
         expect(res.ok).toBe(false);
         const details = res.error?.details as PairingRequiredDetails | undefined;
-        expect(details?.recommendedNextStep).toBeUndefined();
-        expect(details?.pauseReconnect).toBeUndefined();
+        // The foreground node-host keeps retrying so a manual approval is
+        // picked up without restarting it; this does not auto-approve pairing.
+        expect(details?.recommendedNextStep).toBe("wait_then_retry");
+        expect(details?.pauseReconnect).toBe(false);
         expect(probeMock).not.toHaveBeenCalled();
         expect(await getPairedDevice(loaded.identity.deviceId)).toBeNull();
       },
