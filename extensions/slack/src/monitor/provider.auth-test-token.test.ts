@@ -744,6 +744,13 @@ describe("user identity provider transport", () => {
     });
 
     await vi.waitFor(() => expect(getSlackTestState().sendMock).toHaveBeenCalledTimes(1));
+    const replyContext = getSlackTestState().replyMock.mock.calls[0]?.[0] as
+      | { SessionKey?: string; WasMentioned?: boolean }
+      | undefined;
+    expect(replyContext).toMatchObject({
+      SessionKey: "agent:main:slack:channel:c123:thread:1699999999.000001",
+      WasMentioned: true,
+    });
     expect(getSlackTestState().sendMock).toHaveBeenCalledWith(
       "channel:C123",
       "native reply",
