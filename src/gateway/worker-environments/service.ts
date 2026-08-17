@@ -11,6 +11,7 @@ import { onSessionIdentityMutation } from "../../config/sessions/session-accesso
 import type { OpenClawConfig } from "../../config/types.js";
 import type { SecretRef } from "../../config/types.secrets.js";
 import { withTimeout } from "../../infra/fs-safe.js";
+import { isSqliteLockError } from "../../infra/sqlite-transaction.js";
 import { KeyedAsyncQueue } from "../../plugin-sdk/keyed-async-queue.js";
 import type {
   WorkerProfile,
@@ -351,7 +352,15 @@ export function createWorkerEnvironmentService(options: WorkerEnvironmentService
           ),
       );
     await runTasksWithConcurrency({ tasks, limit: 8 });
-    store.pruneTerminalEnvironments();
+    try {
+      store.pruneTerminalEnvironments();
+    } catch (error) {
+      // Pruning is opportunistic and retries on the next sweep; lock contention must not
+      // turn a healthy worker reconciliation into a startup or periodic-reconcile failure.
+      if (!isSqliteLockError(error)) {
+        throw error;
+      }
+    }
   };
 
   const reconcileOnce = () => {
