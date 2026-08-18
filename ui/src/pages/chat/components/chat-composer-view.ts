@@ -148,6 +148,48 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
       `
     : nothing;
   const showComposerInput = showComposer && props.disabledBanner?.kind !== "composer-replacement";
+  const plusMenu = showComposerInput
+    ? renderChatComposerPlusMenu({
+        attachments: props,
+        showCapabilities: props.capabilityMenu !== undefined,
+        basePath: props.capabilityMenu?.basePath ?? "",
+        disabled: !canCompose || props.suggestionComposer === true,
+        open: state.capabilityMenuOpen,
+        view: state.capabilityMenuView,
+        toolOverrides: props.toolOverrides,
+        skills: props.capabilityMenu?.skills ?? null,
+        skillsLoading: props.capabilityMenu?.skillsLoading ?? false,
+        skillsError: props.capabilityMenu?.skillsError ?? false,
+        mcpServers: props.capabilityMenu?.mcpServers ?? [],
+        toolsEffectiveResult: props.capabilityMenu?.toolsEffectiveResult ?? null,
+        toolsEffectiveLoading: props.capabilityMenu?.toolsEffectiveLoading ?? false,
+        toolsEffectiveError: props.capabilityMenu?.toolsEffectiveError ?? false,
+        toolAccessMutationBlockedReason:
+          props.capabilityMenu?.toolAccessMutationBlockedReason ?? null,
+        webSearchBaseEnabled: props.capabilityMenu?.webSearchBaseEnabled ?? true,
+        mutationBlockedReason: props.capabilityMenu?.mutationBlockedReason ?? null,
+        canAdmin: props.capabilityMenu?.canAdmin ?? false,
+        adminBlockedReason: props.capabilityMenu?.adminBlockedReason ?? null,
+        addServerDialog: props.capabilityMenu?.addServerDialog,
+        onOpenChange: (open) => {
+          state.capabilityMenuOpen = open;
+          if (!open) {
+            state.capabilityMenuView = "root";
+          }
+          requestUpdate();
+        },
+        onViewChange: (view) => {
+          state.capabilityMenuView = view;
+          requestUpdate();
+        },
+        onLoadSkills: props.capabilityMenu?.onLoadSkills ?? (() => {}),
+        onPatchToolOverrides: props.capabilityMenu?.onPatchToolOverrides ?? (() => {}),
+        onNavigate: props.capabilityMenu?.onNavigate ?? (() => {}),
+        onAddServer: props.capabilityMenu?.onAddServer,
+        onEnsureToolAccess: props.capabilityMenu?.onEnsureToolAccess,
+        onOpenToolAccess: props.capabilityMenu?.onOpenToolAccess,
+      })
+    : nothing;
   if (!props.capabilityMenu) {
     state.capabilityMenuView = "root";
   }
@@ -336,46 +378,6 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
               : nothing}
 
             <div class="agent-chat__composer-input-row">
-              ${renderChatComposerPlusMenu({
-                attachments: props,
-                showCapabilities: props.capabilityMenu !== undefined,
-                basePath: props.capabilityMenu?.basePath ?? "",
-                disabled: !canCompose || props.suggestionComposer === true,
-                open: state.capabilityMenuOpen,
-                view: state.capabilityMenuView,
-                toolOverrides: props.toolOverrides,
-                skills: props.capabilityMenu?.skills ?? null,
-                skillsLoading: props.capabilityMenu?.skillsLoading ?? false,
-                skillsError: props.capabilityMenu?.skillsError ?? false,
-                mcpServers: props.capabilityMenu?.mcpServers ?? [],
-                toolsEffectiveResult: props.capabilityMenu?.toolsEffectiveResult ?? null,
-                toolsEffectiveLoading: props.capabilityMenu?.toolsEffectiveLoading ?? false,
-                toolsEffectiveError: props.capabilityMenu?.toolsEffectiveError ?? false,
-                toolAccessMutationBlockedReason:
-                  props.capabilityMenu?.toolAccessMutationBlockedReason ?? null,
-                webSearchBaseEnabled: props.capabilityMenu?.webSearchBaseEnabled ?? true,
-                mutationBlockedReason: props.capabilityMenu?.mutationBlockedReason ?? null,
-                canAdmin: props.capabilityMenu?.canAdmin ?? false,
-                adminBlockedReason: props.capabilityMenu?.adminBlockedReason ?? null,
-                addServerDialog: props.capabilityMenu?.addServerDialog,
-                onOpenChange: (open) => {
-                  state.capabilityMenuOpen = open;
-                  if (!open) {
-                    state.capabilityMenuView = "root";
-                  }
-                  requestUpdate();
-                },
-                onViewChange: (view) => {
-                  state.capabilityMenuView = view;
-                  requestUpdate();
-                },
-                onLoadSkills: props.capabilityMenu?.onLoadSkills ?? (() => {}),
-                onPatchToolOverrides: props.capabilityMenu?.onPatchToolOverrides ?? (() => {}),
-                onNavigate: props.capabilityMenu?.onNavigate ?? (() => {}),
-                onAddServer: props.capabilityMenu?.onAddServer,
-                onEnsureToolAccess: props.capabilityMenu?.onEnsureToolAccess,
-                onOpenToolAccess: props.capabilityMenu?.onOpenToolAccess,
-              })}
               <div class="agent-chat__composer-combobox">
                 <textarea
                   ${ref(state.textareaRef ?? undefined)}
@@ -445,9 +447,10 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
                     ${renderChatPermissionPicker(props.permissionPicker)}
                   </div>`
                 : nothing}
-              ${composerControls !== nothing
-                ? html`
-                    <div class="agent-chat__composer-controls">
+              <div class="agent-chat__composer-controls">
+                ${plusMenu}
+                ${composerControls !== nothing
+                  ? html`
                       ${composerRunStatus?.phase === "interrupted"
                         ? html`
                             <div class="agent-chat__composer-run-status">
@@ -495,9 +498,9 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
                           `
                         : nothing}
                       ${composerControls}
-                    </div>
-                  `
-                : nothing}
+                    `
+                  : nothing}
+              </div>
               <div class="agent-chat__composer-context">${contextNotice}</div>
             </div>
           </div>`

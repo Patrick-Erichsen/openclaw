@@ -267,9 +267,7 @@ suite.define(() => {
         .poll(() => page.getByRole("button", { name: "Start video talk" }).count())
         .toBe(0);
       await expect
-        .poll(() =>
-          attach.evaluate((node) => node.closest(".agent-chat__composer-input-row") != null),
-        )
+        .poll(() => attach.evaluate((node) => node.closest(".agent-chat__composer-footer") != null))
         .toBe(true);
       await expect
         .poll(() =>
@@ -662,23 +660,14 @@ suite.define(() => {
       }
       expect(mobileSettingsBox.x).toBeGreaterThanOrEqual(0);
       expect(mobileSettingsBox.x + mobileSettingsBox.width).toBeLessThanOrEqual(393);
-      expect(mobileAttachBox.x + mobileAttachBox.width).toBeLessThanOrEqual(mobileVoiceBox.x + 1);
-      await expect
-        .poll(async () => {
-          const [polledAttachBox, polledVoiceBox] = await Promise.all([
-            attach.boundingBox(),
-            voice.boundingBox(),
-          ]);
-          if (!polledAttachBox || !polledVoiceBox) {
-            return Number.POSITIVE_INFINITY;
-          }
-          return Math.abs(
-            polledAttachBox.y +
-              polledAttachBox.height / 2 -
-              (polledVoiceBox.y + polledVoiceBox.height / 2),
-          );
-        })
-        .toBeLessThanOrEqual(2);
+      expect(mobileAttachBox.x + mobileAttachBox.width).toBeLessThanOrEqual(mobileModelBox.x + 1);
+      expect(
+        Math.abs(
+          mobileAttachBox.y +
+            mobileAttachBox.height / 2 -
+            (mobileModelBox.y + mobileModelBox.height / 2),
+        ),
+      ).toBeLessThanOrEqual(2);
       await attach.click();
       await expect.poll(() => takePhoto.isVisible()).toBe(true);
       await expect
@@ -687,6 +676,18 @@ suite.define(() => {
       await expect
         .poll(() => composerShell.getByRole("menuitem", { name: "File", exact: true }).isVisible())
         .toBe(true);
+      const attachmentMenuBox = await composer
+        .locator("wa-dropdown.agent-chat__attach-menu")
+        .evaluate((node) => {
+          const menu = node.shadowRoot?.querySelector<HTMLElement>("[part=menu]");
+          const rect = menu?.getBoundingClientRect();
+          return rect ? { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom } : null;
+        });
+      expect(attachmentMenuBox).not.toBeNull();
+      expect(attachmentMenuBox?.x ?? -1).toBeGreaterThanOrEqual(0);
+      expect(attachmentMenuBox?.y ?? -1).toBeGreaterThanOrEqual(0);
+      expect(attachmentMenuBox?.right ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(393);
+      expect(attachmentMenuBox?.bottom ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(852);
       await page.keyboard.press("Escape");
       await textarea.fill("Keep camera access in the attachment menu");
       await expect.poll(() => camera.count()).toBe(0);

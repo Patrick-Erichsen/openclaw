@@ -4032,12 +4032,6 @@ button.chat-pr__diff {
     gap: 0;
   }
 
-  .agent-chat__composer-input-row .agent-chat__input-btn--attach {
-    width: 36px;
-    min-width: 36px;
-    height: var(--chat-composer-control-height);
-  }
-
   .agent-chat__composer-combobox {
     align-self: stretch;
   }
@@ -4116,7 +4110,14 @@ button.chat-pr__diff {
     width: fit-content;
     min-width: 0;
     max-width: min(70vw, 100%);
+  }
+
+  .agent-chat__composer-controls .chat-controls__model {
     margin-left: 0;
+  }
+
+  .chat-composer-model-control {
+    margin-left: auto;
   }
 
   /* Reserve the readable model trigger, 44px effort target, and their gap;

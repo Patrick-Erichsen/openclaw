@@ -295,6 +295,14 @@ function chatControlsHtml(opts: { agent?: boolean } = {}) {
 function composerControlsHtml(crowded = false) {
   return `
     <div class="agent-chat__composer-controls">
+      <details class="agent-chat__attach-menu">
+        <summary class="agent-chat__input-btn agent-chat__input-btn--attach" aria-label="Add attachment">${iconSvg()}</summary>
+        <div class="agent-chat__attach-menu-popover" role="menu">
+          <button class="agent-chat__attach-menu-option" role="menuitem">${iconSvg()}<span>Camera</span></button>
+          <button class="agent-chat__attach-menu-option" role="menuitem">${iconSvg()}<span>Photo</span></button>
+          <button class="agent-chat__attach-menu-option" role="menuitem">${iconSvg()}<span>File</span></button>
+        </div>
+      </details>
       ${
         crowded
           ? `<div class="agent-chat__composer-run-status">
@@ -497,14 +505,6 @@ function chatHtml(opts: ChatFixtureOptions = {}, mobileNavLayout = false) {
                   }
                   <div class="agent-chat__composer-status-stack"> </div>
                   <div class="agent-chat__composer-input-row">
-                    <details class="agent-chat__attach-menu">
-                      <summary class="agent-chat__input-btn agent-chat__input-btn--attach" aria-label="Add attachment">${iconSvg()}</summary>
-                      <div class="agent-chat__attach-menu-popover" role="menu">
-                        <button class="agent-chat__attach-menu-option" role="menuitem">${iconSvg()}<span>Camera</span></button>
-                        <button class="agent-chat__attach-menu-option" role="menuitem">${iconSvg()}<span>Photo</span></button>
-                        <button class="agent-chat__attach-menu-option" role="menuitem">${iconSvg()}<span>File</span></button>
-                      </div>
-                    </details>
                     <div class="agent-chat__composer-combobox">
                       <textarea rows="1">Queued follow-up for the active operator session</textarea>
                     </div>
@@ -2391,7 +2391,7 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
       expect(input.y - (thread.y + thread.height)).toBeGreaterThanOrEqual(5.5);
       expect(shell.x).toBeLessThanOrEqual(8);
       expect(layout.viewportWidth - (shell.x + shell.width)).toBeLessThanOrEqual(8);
-      expect(attach.x - input.x).toBeLessThanOrEqual(10);
+      expect(attach.x + attach.width).toBeLessThanOrEqual(model.x + 1);
       expect(context.x).toBeGreaterThanOrEqual(model.x + model.width - 1);
       expect(input.x + input.width - (send.x + send.width)).toBeLessThanOrEqual(8);
       for (const control of [model, context]) {
@@ -2658,9 +2658,9 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
         expect(model.y).toBeGreaterThanOrEqual(textarea.y);
         expect(context.y).toBeGreaterThanOrEqual(textarea.y);
         expect(
-          Math.abs(attach.y + attach.height / 2 - (send.y + send.height / 2)),
+          Math.abs(attach.y + attach.height / 2 - (model.y + model.height / 2)),
         ).toBeLessThanOrEqual(2);
-        expect(attach.x + attach.width).toBeLessThanOrEqual(textarea.x + 1);
+        expect(attach.x + attach.width).toBeLessThanOrEqual(model.x + 1);
         expect(send.x).toBeGreaterThanOrEqual(textarea.x + textarea.width - 1);
         expect(send.x + send.width).toBeLessThanOrEqual(input.x + input.width + 1);
         expect(rectsOverlap(model, send)).toBe(false);

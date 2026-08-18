@@ -4949,9 +4949,13 @@ describe("chat attachment picker", () => {
 
   it("keeps attachment-only composers free of capability rows", () => {
     const container = renderChatView();
+    const attachMenu = requireElement(container, ".agent-chat__attach-menu", "attachment menu");
 
     expect(container.querySelectorAll(".agent-chat__attach-menu-option")).toHaveLength(3);
     expect(container.querySelector(".agent-chat__capability-menu-item")).toBeNull();
+    expect(attachMenu.closest(".agent-chat__composer-footer")).not.toBeNull();
+    expect(attachMenu.closest(".agent-chat__composer-controls")).not.toBeNull();
+    expect(attachMenu.closest(".agent-chat__composer-input-row")).toBeNull();
   });
 
   it("opens the camera input from the attachment menu and attaches the captured photo", async () => {
