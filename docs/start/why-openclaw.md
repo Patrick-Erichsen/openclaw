@@ -7,6 +7,8 @@ read_when:
 title: "Why OpenClaw"
 ---
 
+OpenClaw is an extensible, proactive, open-source AI agent that works everywhere you work. The project is stewarded by the OpenClaw Foundation, a 501(c)(3) whose mission is to make AI personal, fun, and empowering for everyone. We aim to be the Switzerland of AI - the most mature, battle-tested agent for anyone from individuals to enterprises to build on top of.
+
 Every harness ships the same feature list now: [channels](/channels), [tools](/tools), [memory](/concepts/memory), [skills](/tools/skills), [scheduling](/automation). A feature table does not establish the security model. The main distinctions are **where the trust boundary lies** and **whether policy is enforced in code or requested in the system prompt**.
 
 Most harnesses are a single trust envelope. One process holds the agent loop, the channel connections, the credentials, and the shell, running as one OS user on a long-lived machine. Wrapping that process in a VM leaves all of those components inside the same boundary. The machine is maintained and patched in place.
